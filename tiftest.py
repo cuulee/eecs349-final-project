@@ -10,15 +10,30 @@ from pystruct.learners import FrankWolfeSSVM
 
 
 def chaincrf_test():
-	num_pics = 9
+	num_pics = 40
 	X, Y= load_pictures(num_pics)
-	X = np.array(X[0])
-	Y = np.array(Y[0])
-	for i, y in enumerate(Y):
-		for j, p in enumerate(y):
-			if p == 255:
-				Y[i][j] = 2
-    
+	X = np.array(X)
+	Y = np.array(Y)
+
+	print X.shape
+	print Y.shape
+
+	# 0: pixel, 1: row, 2: picture
+	mode = 2
+	outstr = "Test score with data arranged by "
+
+	if mode == 0:
+		X, Y = arrange_by_pixel(X, Y)
+		outstr += "pixel:"
+	elif mode == 1:
+		X, Y = arrange_by_row(X, Y)
+		outstr += "row:"
+	elif mode == 2:
+		X, Y = arrange_by_picture(X, Y)
+		outstr += "picture:"
+
+	print X.shape
+	print Y.shape
 
 	#print X.shape, Y.shape
 	train_pct = 0.66
@@ -33,8 +48,72 @@ def chaincrf_test():
 	# #print X_train.shape, Y_train.shape
 	ssvm.fit(X_train, Y_train)
 	results = ssvm.score(X_test, Y_test)
+	print outstr
 	print results
 
+def arrange_by_pixel(X, Y):
+	Xout = []
+	Yout = []
+	for image in X:
+		for row in image:
+			Xout.append(row)
+
+	for image in Y:
+		for row in image:
+			Yout.append(row)
+
+	for i, y in enumerate(Yout):
+		for j, p in enumerate(y):
+			if p == 255:
+				Yout[i][j] = 2
+
+	Xout = np.array(Xout)
+	Yout = np.array(Yout)
+	return Xout, Yout
+
+def arrange_by_row(X, Y):
+	Xout = []
+	Yout = []
+	for image in X:
+		modified_image = []
+		for row in image:
+			flattened_row = np.hstack(row)
+			modified_image.append(flattened_row)
+		Xout.append(modified_image)
+
+	for image in Y:
+		modified_image = []
+		for row in image:
+			if 255 in row:
+				modified_image.append(1)
+			else:
+				modified_image.append(0)
+		Yout.append(modified_image)
+
+	Xout = np.array(Xout)
+	Yout = np.array(Yout)
+	return Xout, Yout
+
+def arrange_by_picture(X, Y):
+	Xout = []
+	Yout = []
+	for image in X:
+		Xout.append(np.hstack(image))
+		#for row in image:
+		#	Xout.append(row)
+
+	for image in Y:
+		modified_image = []
+		for row in image:
+			if 255 in row:
+				modified_image.append(1)
+			else:
+				modified_image.append(0)
+		Yout.append(modified_image)
+
+	Xout = np.array(Xout)
+	Yout = np.array(Yout)
+	return Xout, Yout
 
 def load_pictures(num):
 	array_X = []
