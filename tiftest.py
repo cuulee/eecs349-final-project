@@ -5,12 +5,15 @@ import sys
 sys.path.append('/Library/Python/2.7/site-packages')
 import cvxopt
 import math
+import os
+import string
+import re
 from pystruct.models import ChainCRF
 from pystruct.learners import FrankWolfeSSVM
 
 
 def chaincrf_test():
-	num_pics = 40
+	num_pics = 3000
 	X, Y= load_pictures(num_pics)
 	X = np.array(X)
 	Y = np.array(Y)
@@ -19,7 +22,7 @@ def chaincrf_test():
 	print Y.shape
 
 	# 0: pixel, 1: row, 2: picture
-	mode = 2
+	mode = 0
 	outstr = "Test score with data arranged by "
 
 	if mode == 0:
@@ -118,16 +121,25 @@ def arrange_by_picture(X, Y):
 def load_pictures(num):
 	array_X = []
 	array_Y = []
-	offset = 16092
-	for i in range(offset, offset+num):
-		img_file = "imagery/image_city_" + str(i) + ".tif"		
-		bldg_file = "buildings/bldg_city_" + str(i) + ".tif"
-		I = plt.imread(img_file)
-		J = plt.imread(bldg_file)
+	count = 0
+	for filename in os.listdir("imagery"):
+		file_id = string.lstrip(filename, "image_city_")
+		if(re.match('\d+\.tif\Z', file_id) == None):
+			continue
+		img_file = "imagery/image_city_" + file_id
+		bldg_file = "buildings/bldg_city_" + file_id
+		try:
+			I = plt.imread(img_file)
+			J = plt.imread(bldg_file)
+		except IOError:
+			continue
 		I = np.resize(I, (127, 127, 4))
 		J = np.resize(J, (127, 127))
 		array_X.append(I)
 		array_Y.append(J)
+		count += 1
+		if count == num:
+			break
 	return array_X, array_Y
 
 
